@@ -59,8 +59,24 @@ QAM: combina variaciones de amplitud y fase al mismo tiempo.
 3.d
 El Bit Error Rate (BER) es la proporción de bits que llegan con error respecto del total de bits transmitidos. Es la métrica más usada para medir la calidad de un enlace digital. En términos de BER, PSK generalmente tiene mejor desempeño que ASK y FSK bajo el mismo nivel de ruido, porque la fase es menos sensible a interferencias que la amplitud.
 
+4.b
+Según la configuración que se ve en Packet Tracer, el router quedó configurado en la frecuencia de 2.417GHz. Esto significa que opera en la banda de 2,4 GHz, con una frecuencia central de 2,417 GHz. El espectro electromagnético que corresponde a la región de microondas. En la banda que opera, según la clasificación de la ITU, 2,4 GHz cae dentro de la banda UHF (Ultra High Frequency, 300 MHz – 3 GHz), muy cerca del límite superior de esa banda (justo antes de pasar a SHF, que arranca en 3 GHz).
+
 4.g 
 
+
 <img width="914" height="1040" alt="Captura desde 2026-08-24 14-32-10" src="https://github.com/user-attachments/assets/b052a5db-703e-4e05-ad45-a23f1af52f56" />
+
+4.h
+Colocamos la laptop en 3 posiciones distintas dentro de la oficina (cerca del router, en una posición intermedia, y en la esquina más alejada) y en las 3 mediciones el ping a la PC de escritorio (192.168.0.100) fue exitoso, con 0% de pérdida de paquetes y latencias bajas en todos los casos.
+
+Esto se debe a que las dimensiones de la oficina simulada son pequeñas en relación al alcance de transmisión del router, por lo que toda la superficie del edificio quedó dentro del área de cobertura Wi-Fi (representada por la zona violeta), sin llegar a un punto donde la atenuación de la señal fuera suficiente como para cortar la conexión.
+
+
+<img width="1088" height="683" alt="Captura desde 2026-08-24 19-14-08" src="https://github.com/user-attachments/assets/04a3aaf9-ecb5-4cbe-a505-91867b568db1" />
+
+<img width="1088" height="683" alt="Captura desde 2026-08-24 19-21-49" src="https://github.com/user-attachments/assets/89c7f561-65b2-49b5-a31c-db14f5a3ecab" />
+
+
 
 
