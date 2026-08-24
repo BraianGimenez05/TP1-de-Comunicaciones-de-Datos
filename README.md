@@ -59,3 +59,8 @@ QAM: combina variaciones de amplitud y fase al mismo tiempo.
 3.d
 El Bit Error Rate (BER) es la proporción de bits que llegan con error respecto del total de bits transmitidos. Es la métrica más usada para medir la calidad de un enlace digital. En términos de BER, PSK generalmente tiene mejor desempeño que ASK y FSK bajo el mismo nivel de ruido, porque la fase es menos sensible a interferencias que la amplitud.
 
+4.g 
+
+<img width="914" height="1040" alt="Captura desde 2026-08-24 14-32-10" src="https://github.com/user-attachments/assets/b052a5db-703e-4e05-ad45-a23f1af52f56" />
+
+
