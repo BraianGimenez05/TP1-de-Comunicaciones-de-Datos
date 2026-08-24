@@ -31,4 +31,8 @@ La fibra óptica: también se atenúa, pero mucho menos que en el cobre, lo que 
 En el esquema, los datos viajan en un solo sentido junto con una señal de reloj que los acompaña. Esto representa una transmisión simplex (un solo sentido) y de tipo síncrona, ya que ambos módulos comparten una señal de clock para sincronizarse.
 
 2.b
+No, porque al ser simplex no permite comunicación bidireccional. Si quisiéramos transmitir rápido en ambos sentidos, necesitaríamos un esquema dúplex, y probablemente convendría pasar a una comunicación asíncrona, que no depende de compartir una línea de reloj entre ambos extremos.
+
+2.c
+
 
