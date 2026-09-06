@@ -1,0 +1,20 @@
+Total de frames encontrados: 14
+
+Orden de reconstrucción (por SEQ):
+  SEQ=2    grupo=aurac  payload='t'
+  SEQ=3    grupo=bitbr  payload='p'
+  SEQ=4    grupo=click  payload='s:'
+  SEQ=5    grupo=death  payload='/'
+  SEQ=6    grupo=ferne  payload='/'
+  SEQ=8    grupo=grupo  payload='w'
+  SEQ=16   grupo=macac  payload='m/s'
+  SEQ=17   grupo=milan  payload='ho'
+  SEQ=18   grupo=netru  payload='r'
+  SEQ=19   grupo=netru  payload='ts'
+  SEQ=20   grupo=panda  payload='/'
+  SEQ=23   grupo=tcpan  payload='_l'
+  SEQ=25   grupo=wireg  payload='Lnw'
+  SEQ=32   grupo=group  payload='w'
+
+Mensaje final reconstruido:
+tps://wm/shorts/_lLnww

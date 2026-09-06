@@ -1,0 +1,8 @@
+Grupo: bitbros (prefijo buscado: 'bitbr')
+Frames encontrados para el grupo: 1
+
+SEQ: 3
+LENGTH: 1
+PAYLOAD (hex): 70
+PAYLOAD (texto): p
+----------------------------------------
