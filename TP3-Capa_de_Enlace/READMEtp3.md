@@ -1,0 +1,63 @@
+# TP3-de-Comunicaciones-de-Datos
+
+### 1.a
+
+La capa de Enlace de Datos o capa 2 del modelo OSI, se encarga de la comunicación entre dispositivos conectados directamente en el mismo segmento de red local. Resuelve problemas como: direccionamiento físico (MAC), detección de errores de transmisión, control de acceso al medio compartido, y el empaquetado de bits en tramas para que la capa de Red pueda operar sobre ellas.
+
+### 1.b
+
+MAC: dirección física de 48 bits, asignada por el fabricante a la interfaz de red (NIC). Es de capa 2, no tiene jerarquía, es decir, no indica dónde está el dispositivo en la red y solo tiene sentido dentro del mismo segmento local.
+IP: dirección lógica de capa 3, asignada por configuración o DHCP (permite enrutamiento entre redes) y puede cambiar.
+
+La diferencia clave: la MAC identifica el dispositivo físico dentro de la LAN; la IP identifica al dispositivo dentro de toda la red/Internet y permite que los routers decidan por dónde encaminar el tráfico.
+
+### 1.c
+
+Una trama Ethernet es la unidad básica de transmisión de datos en la capa de enlace, usada en redes Ethernet. Es la estructura con la que se empaqueta la información antes de enviarla físicamente por el medio como cable o aire. Se podria decir que es el sobre que usa la capa de enlace para mover datos entre dos dispositivos dentro del mismo segmento de red local.
+
+Preámbulo + SFD: sincronización del receptor con el emisor.
+MAC destino (6 bytes): a quién va dirigida la trama.
+MAC origen (6 bytes): quién la envía.
+EtherType (2 bytes): indica qué protocolo de capa superior viene encapsulado.
+Datos/Payload (46–1500 bytes): el contenido real (típicamente un paquete IP).
+FCS (4 bytes): checksum CRC para detectar errores en la transmisión.
+
+### 1.d
+
+La informacion es otorgada por el campo Ethernet. Algunos valores comunes o ejemplos de dicha informacion son: 0x0800 = IPv4, 0x0806 = ARP, 0x86DD = IPv6.
+
+## 2
+
+### Wireshark
+
+
+![Wireshark](Imagenes/Captura_Wireshark.png)
+
+### Trama de Ethernet
+
+![Trama de Ethernet](Imagenes/Captura_Trama_Ethernet.png)
+
+
+
+
+
+### 2.a 
+
+La IP destino 192.168.1.45 es una IP privada de nuestra red local, así que este paquete está entrando hacia nuestra compu. La MAC destino (de fabricante `AzureWaveTec`) es la placa Wi-Fi de la propia notebook. Y la MAC origen (de fabricante `GuangzhouVSo`) es la del router de la red local, no la del servidor con el que nos estamos comunicando. O sea, la MAC que vemos ahí es solo la del último "cartero" que trajo el paquete, no la del que lo mandó originalmente.
+
+### 2.b
+
+El origen es `100.20.72.98` es una IP pública, del servidor real al que nos conectamos (tráfico cifrado de una web segura).
+El destino es `192.168.1.45` nuestra propia IP dentro de la red local.
+
+### 2.c
+
+No representa lo mismo por que la IP indica quiénes son los dos extremos reales de la comunicación (el servidor en internet y nuestra compu) y se mantiene igual durante todo el recorrido del paquete. La MAC, en cambio, solo identifica el tramo local, es decir, acá vemos la MAC del router y la de la notebook, nunca la del servidor real, porque va cambiando en cada salto de la red hasta llegar a destino.
+
+### 2.d
+
+
+![Campo EtherType](Imagenes/Captura_Campo_EtherType.png)
+
+
+El campo Type dentro de "Ethernet II" muestra el valor 0x0800, que corresponde a IPv4. Este campo es justamente el que le indica al receptor que el contenido encapsulado en la trama es un paquete IPv4, lo cual coincide con lo observado en la sección "Internet Protocol Version 4" de la misma trama.
