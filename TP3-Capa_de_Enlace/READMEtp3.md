@@ -61,3 +61,19 @@ No representa lo mismo por que la IP indica quiénes son los dos extremos reales
 
 
 El campo Type dentro de "Ethernet II" muestra el valor 0x0800, que corresponde a IPv4. Este campo es justamente el que le indica al receptor que el contenido encapsulado en la trama es un paquete IPv4, lo cual coincide con lo observado en la sección "Internet Protocol Version 4" de la misma trama.
+
+
+### 3.d y e
+![alt text](Imagenes/WiresharkConection.png)
+
+En la imagen vemos 4 apartados
+    - 1 El cliente y el servidor se saludan previamente intercambiando tres paquetes de control (SYN, SYN-ACK, ACK) para sincronizarse, asegurar que ambos están activos y abrir el canal.
+    - 2 Una vez abierto el túnel, el emisor despacha el paquete que contiene la información real, marcado con la bandera de empuje (PSH).
+    -3 El receptor devuelve instantáneamente un paquete de confirmación (ACK) para validar que el mensaje llegó completo y sin errores. 
+    -4 Four-way handshake: Al terminar la comunicación, ambas máquinas ejecutan un proceso formal de cuatro pasos (intercambiando banderas FIN y ACK) para desconectarse ordenadamente y liberar la memoria, evitando dejar puertos colgados
+
+### 3.f 
+La infraestructura de red transporta mensajes como se los mandan, esto implica que es necesario una capa mas de proteccion o cifrado que impida el acceso libre a alguien que este conectado al mismo medio.
+
+### 4
+![alt text](Imagenes/ComandosRedFcefyn.png)
