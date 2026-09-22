@@ -63,6 +63,44 @@ No representa lo mismo por que la IP indica quiénes son los dos extremos reales
 El campo Type dentro de "Ethernet II" muestra el valor 0x0800, que corresponde a IPv4. Este campo es justamente el que le indica al receptor que el contenido encapsulado en la trama es un paquete IPv4, lo cual coincide con lo observado en la sección "Internet Protocol Version 4" de la misma trama.
 
 
+## 3
+
+### 3.a
+
+Ethernet e IP hacen lo mínimo: entregan paquetes "a ciegas", sin garantías. TCP se encarga de todo lo que le falta a esa entrega para que sea confiable. Ethernet resuelve la entrega dentro de la LAN, IP resuelve el enrutamiento entre redes, pero ninguno de los dos garantiza que los datos lleguen completos, en orden, sin duplicarse y a la aplicación (proceso) correcta dentro del host. Esto es lo que agrega TCP.
+
+### 3.b
+
+La cabecera TCP tiene bastantes más campos que la de UDP porque se encarga de mucho más:
+
+- **Puerto de origen / destino**: identifican qué proceso envía y qué proceso recibe en cada extremo.
+- **Número de secuencia**: numera los datos enviados para poder reordenarlos y detectar faltantes en destino.
+- **Número de ACK**: indica cuál es el próximo byte que se espera recibir, confirmando que lo anterior llegó bien.
+- **Longitud de cabecera**: indica cuánto ocupa la cabecera, ya que puede variar por el campo Opciones.
+- **Reservado**: bits sin uso.
+- **Flags (SYN, ACK, FIN, RST, PSH, URG)**: controlan el estado de la conexión (abrir, confirmar, cerrar, cortar, entregar ya, marcar urgente).
+- **Ventana**: cuántos bytes más puede recibir el otro extremo sin confirmar todavía. Es el control de flujo.
+- **Suma de verificación**: permite detectar si el segmento se corrompió en el camino.
+- **Puntero urgente**: solo se usa si está el flag URG, marca hasta dónde llegan los datos urgentes.
+- **Opciones y relleno**: parámetros extra opcionales, con relleno para que la cabecera quede alineada.
+
+UDP en cambio solo tiene puerto de origen, puerto de destino, largo del segmento y checksum. No numera, no confirma, no reordena ni controla flujo, por eso es mucho más liviano pero no confiable por sí solo.
+
+### 3.c
+
+**Three-way handshake (apertura de la conexión):**
+1. El cliente envía un segmento con el flag SYN, proponiendo un número de secuencia inicial.
+2. El servidor responde con SYN + ACK, aceptando la conexión y proponiendo su propio número de secuencia inicial.
+3. El cliente responde con ACK, confirmando. A partir de acá la conexión queda establecida y ambos lados pueden enviar datos.
+
+**Four-way handshake (cierre de la conexión):**
+1. El extremo que quiere cerrar envía un segmento con el flag FIN.
+2. El otro extremo responde con ACK, confirmando que recibió el aviso (pero puede seguir enviando datos si todavía le quedan).
+3. Cuando ese extremo también termina, envía su propio FIN.
+4. El primero responde con ACK, confirmando el cierre. Recién ahí se libera la conexión de los dos lados.
+
+Se necesitan cuatro pasos (y no tres como al abrir) porque el cierre es independiente en cada sentido: cada extremo puede terminar de enviar en un momento distinto, entonces cada uno manda su propio FIN cuando ya no tiene más datos para enviar.
+
 ### 3.d y e
 ![alt text](Imagenes/WiresharkConection.png)
 
@@ -77,3 +115,5 @@ La infraestructura de red transporta mensajes como se los mandan, esto implica q
 
 ### 4
 ![alt text](Imagenes/ComandosRedFcefyn.png)
+
+Se probaron los comandos base con el servidor: `hola` → `hola :)`, `ping` → `pong`, `tic` → `toc`, `status` → `esperando comando`. Al enviar el comando del grupo, `bitbros`, el servidor respondió con varios paquetes de payload (`seq: 3, payload: BitBros`, `seq: 3, payload: #hiddenSSID`, entre otros), confirmando el reconocimiento del grupo.
