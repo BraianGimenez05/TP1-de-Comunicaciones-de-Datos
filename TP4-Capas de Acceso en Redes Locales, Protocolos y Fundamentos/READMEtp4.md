@@ -44,9 +44,62 @@ Gracias a esta etiqueta, un mismo enlace físico (un puerto en modo *trunk*) pue
 
 El **Tagging** es el proceso de agregar (o leer) la etiqueta 802.1Q en una trama Ethernet para identificar a qué VLAN pertenece cuando circula por un enlace troncal (trunk) compartido por varias VLANs. Las tramas etiquetadas se llaman *tagged*, mientras que las que no llevan la marca (como las que entran/salen por un puerto en modo *access*) se llaman *untagged*, y el switch las asocia automáticamente a la VLAN configurada en ese puerto (o a la VLAN nativa, en el caso de un trunk). En definitiva, el tagging es el mecanismo concreto por el cual funciona 802.1Q: sin él, un trunk no podría distinguir a qué VLAN pertenece cada trama que transporta.
 
-## 2) Configuración de VLANs en Packet Tracer
+### 2.i
 
-*(Pendiente: configuración de sw1 y sw2, contraseñas, VLANs 10/20/99, asignación de puertos y pruebas de conectividad)*
+La VLAN 1, llamada default. Es la VLAN a la que pertenecen automáticamente todos los puertos de un switch Cisco recién configurado, hasta que se les asigna explícitamente otra VLAN. Por eso vemos que todos los puertos (activos e inactivos) siguen listados bajo la VLAN 1, incluso los que después vamos a mover a las VLANs 10, 20 o 99.
+
+
+![text](Imagenes/Captura-de-sw1.png)
+
+
+### 2.l
+
+**show ip interface brief (sw1):**
+
+![text](Imagenes/Captura-de-sw1-modificado.png)
+
+![text](Imagenes/Captura-de-sw2-modificado.png)
+
+
+
+La interfaz Vlan1 quedó sin dirección IP asignada (unassigned) tras el comando `no ip address`, 
+aunque se mantiene en estado up/up porque sigue siendo la VLAN nativa del switch. 
+La interfaz Vlan99 muestra el estado **up/down**: el "up" indica que la interfaz está 
+administrativamente habilitada (no shutdown), pero el "down" del protocolo de línea indica 
+que aún no hay ningún puerto físico activo perteneciente a la VLAN 99.
+
+
+### 2.n
+
+
+**Ping PC-A a PC-B (192.168.10.4):**
+
+![text](Imagenes/Captura-de-pc0-ping.png)
+
+
+**Ping sw1 a sw2 (192.168.1.12):**
+
+![text](Imagenes/Captura-de-sw1-ping.png)
+
+
+
+Los dos pings fallan por la misma razón. Cuando movimos los puertos F0/6 y F0/18 a la VLAN 10, 
+y las IPs de gestión a la VLAN 99, ese tráfico quedó encerrado dentro de cada switch por 
+separado. El cable que conecta sw1 con sw2 (puerto F0/1 en los dos) sigue siendo un puerto 
+de acceso normal en la VLAN 1, nunca lo configuramos para que sea un enlace troncal (trunk).
+
+Un puerto de acceso solo deja pasar el tráfico de una sola VLAN. Entonces, aunque PC-A y PC-B 
+estén las dos en la VLAN 10, o las direcciones de management de ambos switches estén en la 
+VLAN 99, ese tráfico no tiene por dónde cruzar de un switch al otro: el único cable que los 
+une solo transporta la VLAN 1.
+
+Esto muestra en la práctica para qué sirve el protocolo 802.1Q que vimos en el punto 1c, para 
+que un solo cable entre switches pueda llevar el tráfico de varias VLANs a la vez, hace falta 
+configurarlo como trunk, que es lo que permite "etiquetar" cada trama para que el otro switch 
+sepa a qué VLAN pertenece.
+
+Como el enunciado no pedía configurar ese enlace como trunk, este resultado (que el ping falle) 
+es justamente lo esperado.
 
 ## 3) Simulación de red LAN a bordo de una aeronave (VLAN + NAT + ACL)
 
