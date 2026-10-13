@@ -173,17 +173,17 @@ Contenido de la captura:
 | 11 | 76,3 s | ARP Request del **router** preguntando por 192.168.1.46, en **unicast** a nuestra MAC |
 | 12 | 76,3 s | ARP Reply nuestro al router |
 
-Como la IP de la Opción A no existe, ningún Request nuestro tuvo respuesta; el par Request/Reply completo que se ve en la captura es el que inició el router (paquetes 11 y 12). La tabla compara ambos Request con el Reply:
+Como la IP de la Opción A no existe, ningún Request nuestro tuvo respuesta; el par Request/Reply completo que se ve en la captura es el que inició el router (paquetes 11 y 12):
 
-| Campo | ARP Request nuestro (paq. 1) | ARP Request del router (paq. 11) | ARP Reply (paq. 12) |
-|---|---|---|---|
-| MAC destino (Ethernet) | `ff:ff:ff:ff:ff:ff` (broadcast) | 58:02:05:53:72:b1 (unicast) | 4c:d7:c8:f6:10:4c |
-| MAC origen (Ethernet) | 58:02:05:53:72:b1 | 4c:d7:c8:f6:10:4c | 58:02:05:53:72:b1 |
-| Opcode | 1 (request) | 1 (request) | 2 (reply) |
-| Sender MAC address | 58:02:05:53:72:b1 | 4c:d7:c8:f6:10:4c | 58:02:05:53:72:b1 |
-| Sender IP address | 192.168.1.46 | 192.168.1.1 | 192.168.1.46 |
-| Target MAC address | `00:00:00:00:00:00` | `00:00:00:00:00:00` | 4c:d7:c8:f6:10:4c |
-| Target IP address | 192.168.1.253 | 192.168.1.46 | 192.168.1.1 |
+| Campo | ARP Request (paq. 11) | ARP Reply (paq. 12) |
+|---|---|---|
+| MAC destino (encabezado Ethernet) | 58:02:05:53:72:b1 | 4c:d7:c8:f6:10:4c |
+| MAC origen (encabezado Ethernet) | 4c:d7:c8:f6:10:4c | 58:02:05:53:72:b1 |
+| Opcode | 1 (request) | 2 (reply) |
+| Sender MAC address | 4c:d7:c8:f6:10:4c | 58:02:05:53:72:b1 |
+| Sender IP address | 192.168.1.1 | 192.168.1.46 |
+| Target MAC address | `00:00:00:00:00:00` | 4c:d7:c8:f6:10:4c |
+| Target IP address | 192.168.1.46 | 192.168.1.1 |
 
 > El mismo intercambio (Request del router + Reply nuestro) aparece también en `01_icmp.pcapng`, paquetes 14 y 15, en medio del ping a 8.8.8.8.
 
@@ -197,7 +197,7 @@ Observación: el Request del router (paquete 11) fue **unicast**. No es una cont
 Type = **0x0806** (ARP). **No hay encabezado IP**: el mensaje ARP va directamente dentro de la trama Ethernet. Eso muestra que ARP "vive" por debajo de IP, ligado al enlace local: no es ruteable y nunca sale de la LAN. Las tramas ARP de la captura miden **42 B**: 14 de Ethernet + 28 de ARP. (Las tramas recibidas por cable suelen verse de 60 B por el relleno mínimo de Ethernet; acá, por Wi-Fi, se ven de 42 B.)
 
 **c) Opción A (IP inexistente)**
-Aparecieron **3 ARP Request** por cada `ping -c 2`, separados ~1 s, y **ningún Reply**, porque ningún equipo tiene esa IP. **No apareció ningún ICMP Echo Request** en la captura: el ping se arma, pero el kernel no puede construir la trama sin la MAC destino, así que lo retiene esperando la resolución y al fallar lo descarta. `ping` informa `From 192.168.1.46 … Destination Host Unreachable`: el mensaje viene de **nuestra propia IP**, es decir, lo generó nuestro sistema localmente, no la red. La entrada queda en la caché en estado **FAILED**.
+Aparecieron **3 ARP Request** por cada `ping -c 2`, separados ~1 s (paquetes 1–3: MAC destino `ff:ff:ff:ff:ff:ff`, Sender 58:02:05:53:72:b1 / 192.168.1.46, Target `00:00:00:00:00:00` / 192.168.1.253), y **ningún Reply**, porque ningún equipo tiene esa IP. **No apareció ningún ICMP Echo Request** en la captura: el ping se arma, pero el kernel no puede construir la trama sin la MAC destino, así que lo retiene esperando la resolución y al fallar lo descarta. `ping` informa `From 192.168.1.46 … Destination Host Unreachable`: el mensaje viene de **nuestra propia IP**, es decir, lo generó nuestro sistema localmente, no la red. La entrada queda en la caché en estado **FAILED**.
 
 **d) Repetir el ping un minuto después**
 - **A 192.168.1.253:** volvieron a salir **3 ARP Request en broadcast** (paquetes 4–6). La entrada FAILED no guarda ninguna MAC, así que no sirve: hay que volver a preguntar.
@@ -316,9 +316,7 @@ Es decir: TCP avisa con un mecanismo propio (RST) y antes de mandar datos; UDP n
 
 ## 4) Servidor TCP mínimo
 
-Scripts: [`tcp_server.py`](tcp_server.py), [`tcp_client.py`](tcp_client.py) (los de la consigna), más [`udp_server.py`](udp_server.py) / [`udp_client.py`](udp_client.py) con el mismo esquema en el puerto 12001.
-
-**Diferencias del par UDP respecto del TCP:** el servidor no tiene `listen()` ni `accept()` (no hay conexiones), usa `recvfrom()` para saber quién mandó cada datagrama y `sendto()` para contestarle; un envío equivale exactamente a una recepción (se respetan los límites del mensaje). El cliente usa `connect()`, que en UDP **no genera tráfico**: solo fija el destino y permite que el SO le informe un ICMP Port Unreachable como error.
+Scripts: [`tcp_server.py`](tcp_server.py), [`tcp_client.py`](tcp_client.py) (los de la consigna).
 
 ### c) Ejecución
 Archivo: [`capturas/04_tcp_scripts.pcapng`](capturas/04_tcp_scripts.pcapng) — `lo`, filtro `tcp.port == 12000`.
@@ -359,29 +357,14 @@ $ python3 tcp_client.py 127.0.0.1 "Hola desde mi programa"
 | `listen()` | servidor | **No** — pasa el socket a LISTEN; desde acá el kernel responderá SYN-ACK | — |
 | `connect()` | cliente | **Sí** — dispara el three-way handshake | N° 1 SYN · N° 2 SYN, ACK · N° 3 ACK |
 | `accept()` | servidor | **No** — el handshake ya lo completó el kernel; `accept()` solo retira la conexión lista de la cola y devuelve un socket nuevo | (se apoya en los 3 anteriores) |
-| `sendall()` | servidor (y cliente) | **Sí** — segmento con datos | Cliente: N° 4 PSH, ACK (22 B) + N° 5 ACK del servidor · Servidor: N° 6 PSH, ACK (32 B) + N° 7 ACK del cliente |
-| `recv()` | servidor (y cliente) | **No** directamente — lee del buffer del SO; los ACK (N° 5 y 7) los envía el kernel al llegar los datos, haya o no un `recv()` | — |
+| `sendall()` | servidor | **Sí** — segmento con datos | N° 6 PSH, ACK (32 B, `Recibido: Hola desde mi programa`) + N° 7 ACK del cliente |
+| `recv()` | servidor | **No** — lee del buffer del SO; los datos ya llegaron en el N° 4 y el kernel los confirmó con el N° 5 (ACK), haya o no un `recv()` | — |
 | `close()` | ambos | **Sí** — inicia el cierre | Cliente: N° 8 FIN, ACK · Servidor (tras `recv()` = b""): N° 9 FIN, ACK → N° 10 ACK del cliente |
 
 **Conclusión:** solo las llamadas que cambian el estado de la conexión o entregan datos al SO para enviar (`connect`, `send`, `close`) producen segmentos; el resto son operaciones locales. Además, varias cosas que el programa no pide explícitamente (los ACK, la respuesta SYN-ACK) las hace el kernel por su cuenta: el programa trabaja con un flujo de bytes y el SO se encarga del protocolo.
 
-### Extra: el par UDP
-Archivo: [`capturas/04_udp_scripts.pcapng`](capturas/04_udp_scripts.pcapng) — filtro `udp.port == 12001 || icmp`.
-
-```
-$ python3 udp_client.py 127.0.0.1 "Hola desde mi programa"
-[cliente UDP] destino 127.0.0.1:12001, desde 127.0.0.1:56744
-[cliente UDP] enviado: 'Hola desde mi programa'
-[cliente UDP] respuesta (32 bytes): 'Recibido: Hola desde mi programa'
-$ python3 udp_client.py 127.0.0.1 "Hay alguien?"      # con el servidor ya cerrado
-[cliente UDP] enviado: 'Hay alguien?'
-[cliente UDP] el host respondió con ICMP Port Unreachable: nadie escucha en ese puerto
-```
-
-El mismo intercambio que en TCP necesitó 10 segmentos acá son **2 datagramas** (N° 1 y 2). Con el servidor cerrado se ven el datagrama (N° 3) y el **ICMP Port Unreachable** (N° 4), que Python entrega al programa como `ConnectionRefusedError` gracias al `connect()` del socket UDP.
-
 ---
 
 ## Archivos entregados
-- Capturas: `capturas/01_icmp.pcapng`, `02_arp.pcapng`, `03_tcp_ncat.pcapng`, `03_udp_ncat.pcapng`, `03_puertos_cerrados.pcapng`, `04_tcp_scripts.pcapng`, `04_udp_scripts.pcapng`
-- Scripts: `tcp_server.py`, `tcp_client.py`, `udp_server.py`, `udp_client.py`
+- Capturas: `capturas/01_icmp.pcapng`, `02_arp.pcapng`, `03_tcp_ncat.pcapng`, `03_udp_ncat.pcapng`, `03_puertos_cerrados.pcapng`, `04_tcp_scripts.pcapng`
+- Scripts: `tcp_server.py`, `tcp_client.py`
