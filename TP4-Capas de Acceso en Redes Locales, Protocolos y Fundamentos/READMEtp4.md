@@ -113,7 +113,7 @@ En este punto se simula el despliegue de una red LAN a bordo de una aeronave com
 
 ### 3.a Topología y Diagrama de Red
 
-La topología implementada en Cisco Packet Tracer interconecta los dispositivos finales de cada clase (`PC Turista0`, `PC Turista1`, `PC Business 0`, `PC Business 1`, `PC admin`), el servidor de entretenimiento (`Server0`), un switch capa 2 (`Switch0`) que concentra las conexiones físicas y gestiona las VLANs, un router a bordo (`Router1`) que realiza el enrutamiento inter-VLAN (Router-on-a-Stick), provee DHCP a cada red y aplica las políticas de NAT y ACL, y finalmente un router que simula el proveedor de Internet (`ISP`).
+La topología implementada en Cisco Packet Tracer interconecta los dispositivos finales de cada clase (`PC Turista0`, `PC Turista1`, `PC Business 0`, `PC Business 1`, `PC admin`), el servidor de entretenimiento (`Server0`), un switch capa 2 (`Switch0`) que concentra las conexiones físicas y gestiona las VLANs, un router a bordo (`Router1`) que realiza el enrutamiento inter-VLAN, provee DHCP a cada red y aplica las políticas de NAT y ACL, y finalmente un router que simula el proveedor de Internet (`ISP`).
 
 ![Diagrama de Red en Packet Tracer](Imagenes/Diagram.png)
 
@@ -173,7 +173,7 @@ En la salida del comando `show vlan brief` se observa la correcta distribución 
 
 #### 2. Enlace Troncal hacia el Router (`show interfaces trunk`)
 
-Para que el tráfico de todas las VLANs pueda subir al router mediante un único cable físico (implementando la arquitectura *Router-on-a-Stick*), la interfaz `FastEthernet0/1` fue configurada en modo **trunk** utilizando el protocolo estándar **IEEE 802.1Q**:
+Para que el tráfico de todas las VLANs pueda subir al router mediante un único cable físico, la interfaz `FastEthernet0/1` fue configurada en modo **trunk** utilizando el protocolo estándar **IEEE 802.1Q**:
 
 ```text
 SW(config)# interface fa0/1
@@ -191,7 +191,7 @@ Esta configuración resuelve precisamente la limitación observada en el punto *
 ### 3.c Configuración del Router
 
 El router de la aeronave (`Router1`) centraliza las siguientes funciones críticas:
-1. **Router-on-a-Stick (Subinterfaces):** atiende a las VLANs 10, 20 y 99 a través del enlace troncal conectado a su interfaz `Fa0/0`, asignando a cada subinterfaz la IP que funciona como Default Gateway de su respectiva subred.
+1. **Subinterfaces:** atiende a las VLANs 10, 20 y 99 a través del enlace troncal conectado a su interfaz `Fa0/0`, asignando a cada subinterfaz la IP que funciona como Default Gateway de su respectiva subred.
 2. **Servidor DHCP:** asigna direcciones IP dinámicamente a las PCs de cada segmento, excluyendo las primeras 10 direcciones para hosts fijos (gateways y servidor).
 3. **NAT con Sobrecarga (PAT):** permite que los clientes autorizados (Clase Business) salgan a Internet traduciendo sus direcciones privadas a la dirección IP pública del enlace WAN (`200.0.0.1`).
 4. **Listas de Control de Acceso (ACLs):** bloquea el acceso de la Clase Turista hacia Internet mediante una ACL extendida, preservando al mismo tiempo su acceso al servidor de entretenimiento local.
@@ -318,7 +318,7 @@ La estación `admin` cuenta con privilegios de gestión total:
 
 ### 3.f Conclusiones del Punto 3
 
-La implementación permitió aplicar en un caso concreto los conceptos de segmentación y control de acceso en redes locales. Las VLANs dividieron la red en **dominios de broadcast** independientes (Turista, Business y Admin), y el enlace troncal 802.1Q entre el switch y el router permitió transportar el tráfico etiquetado de las tres VLANs por un único cable. El router, mediante subinterfaces (*Router-on-a-Stick*), resolvió el enrutamiento inter-VLAN, y la combinación de NAT con sobrecarga y ACLs permitió aplicar la política de cada clase: Turista limitado al servidor local, Business con acceso al servidor y a Internet, y Administración con acceso total. Las pruebas de ping y de acceso HTTP verificaron este comportamiento.
+La implementación permitió aplicar en un caso concreto los conceptos de segmentación y control de acceso en redes locales. Las VLANs dividieron la red en **dominios de broadcast** independientes (Turista, Business y Admin), y el enlace troncal 802.1Q entre el switch y el router permitió transportar el tráfico etiquetado de las tres VLANs por un único cable. El router, mediante subinterfaces, resolvió el enrutamiento inter-VLAN, y la combinación de NAT con sobrecarga y ACLs permitió aplicar la política de cada clase: Turista limitado al servidor local, Business con acceso al servidor y a Internet, y Administración con acceso total. Las pruebas de ping y de acceso HTTP verificaron este comportamiento.
 
 Durante el desarrollo surgió una dificultad: una vez armada la topología, el servidor de entretenimiento respondía a los pings, pero el navegador no mostraba la página HTTP. Tras revisar VLANs, troncal, tabla de ruteo y ACLs sin encontrar errores, y comprobar mediante el modo *Simulation* que el pedido HTTP llegaba al servidor y la respuesta volvía, se concluyó que el inconveniente era del propio software. El problema se resolvió **reiniciando Packet Tracer**, tras lo cual la página cargó correctamente desde los equipos de las distintas clases. Esto mostró la utilidad de verificar capa por capa (`show vlan brief`, `show interfaces trunk`, `show ip route`, modo *Simulation*) para distinguir un error de configuración de una falla de la herramienta.
 
