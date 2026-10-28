@@ -1,6 +1,6 @@
 # TP5 — Transmisión de Datos: de ICMP y ARP a Sockets TCP
 
-Todas las capturas están en [`capturas/`](capturas/) y se abren con Wireshark. Los filtros que se mencionan son *display filters*.
+Todas las capturas están en [`capturas/`](capturas/) y se abren con Wireshark. Los filtros que se mencionan son *display filters*. Las capturas de pantalla de Wireshark que acompañan cada respuesta están en [`capturas/img/`](capturas/img/).
 
 ## 1) ICMP y primer contacto con Wireshark
 
@@ -77,11 +77,23 @@ Paquetes 1–8: ping al gateway; 9–18: ping a 8.8.8.8 (los paquetes 14 y 15 so
 | Internet Control Message Protocol | — (ICMP no tiene direcciones ni puertos; lo identifican **Identifier = 0x5092** y **Sequence = 1**) | — | Ninguno: **Type = 8, Code = 0** dicen *qué mensaje* es; lo que sigue son sus datos |
 | Datos / payload | — (56 bytes) | — | — (último nivel) |
 
+![Capas del Echo Request](capturas/img/01_capas.png)
+
+*Paquete 9 con las tres capas desplegadas. El campo `Type: IPv4 (0x0800)` está seleccionado y se ven resaltados en el panel hexadecimal los 2 bytes `08 00` que le corresponden. En la misma imagen se leen la MAC destino del gateway, `Protocol: ICMP (1)`, `Destination Address: 8.8.8.8` y `Type: 8 (Echo (ping) request)`.*
+
 ### Preguntas
 
 **a) MAC destino del Echo Request a 8.8.8.8**
 No es la MAC de 8.8.8.8: es **4c:d7:c8:f6:10:4c, la MAC del gateway (router)**, y es exactamente la misma MAC destino que tiene el ping al gateway (paquete 1). Es decir, a nivel Ethernet las dos tramas van al mismo equipo; lo único que cambia es la IP destino.
 Conclusión: la **dirección MAC tiene alcance local (un solo enlace/LAN)**; cada salto reescribe el encabezado Ethernet. La **dirección IP es extremo a extremo**: el destino IP sigue siendo 8.8.8.8 durante todo el recorrido. Cuando el destino no está en la propia subred (192.168.1.0/24), el host le entrega la trama al gateway (MAC del gateway, IP de 8.8.8.8).
+
+![MAC destino del ping al gateway](capturas/img/01_mac_gateway.png)
+
+*Paquete 1 (ping al gateway): `Destination: 4c:d7:c8:f6:10:4c` seleccionada, con sus 6 bytes resaltados al principio del hexadecimal. La línea de IP plegada muestra `Dst: 192.168.1.1`.*
+
+![MAC destino del ping a 8.8.8.8](capturas/img/01_mac_8888.png)
+
+*Paquete 9 (ping a 8.8.8.8): la MAC destino es **la misma**, `4c:d7:c8:f6:10:4c`, pero la línea de IP ahora dice `Dst: 8.8.8.8`. Las dos imágenes juntas muestran que la MAC identifica al próximo salto dentro de la LAN, mientras que la IP identifica al destino final.*
 
 **b) Echo Request vs Echo Reply** (paquetes 9 y 10; Wireshark los vincula con `[Response frame: 10]`)
 
@@ -92,6 +104,10 @@ Conclusión: la **dirección MAC tiene alcance local (un solo enlace/LAN)**; cad
 | ICMP | **Type** 8 → 0; **Checksum** 0x6d2c → 0x752c (cambia porque cambió Type: exactamente 0x0800 de diferencia) | Code (0), **Identifier** (0x5092), **Sequence number** (1), Data (56 B idénticos) |
 
 El identificador y el número de secuencia se mantienen porque son la forma en que `ping` **asocia cada respuesta con su pedido**: el identifier separa sesiones de ping simultáneas (se ve que el ping al gateway usó 0x5091 y el de 8.8.8.8 usó 0x5092) y el sequence permite calcular el RTT de cada Echo y detectar pérdidas o desorden. El receptor está obligado a devolverlos sin cambios.
+
+![Echo Reply: TTL y campos que se mantienen](capturas/img/01_ttl.png)
+
+*Paquete 10 (el Echo Reply de 8.8.8.8) con `Time to Live: 118` seleccionado — el byte `76` resaltado en el hexadecimal. En la misma imagen se verifican los campos de la tabla: `Identification: 0x0000`, `Type: 0 (Echo (ping) reply)`, `Checksum: 0x752c`, y el `Identifier (BE): 20626 (0x5092)` y `Sequence Number (BE): 1` idénticos a los del Request. Wireshark además muestra `[Request frame: 9]` y `[Response time: 72,625 ms]`, el RTT que informó `ping` en la terminal.*
 
 **c) Payload de ping**
 Está en el campo **Data** de ICMP, después de los 8 bytes de encabezado. En nuestra captura (Linux) tiene **56 bytes**:
@@ -106,9 +122,17 @@ Está en el campo **Data** de ICMP, después de los 8 bytes de encabezado. En nu
 ICMP total = 64 B, IP = 84 B, trama = 98 B. En el Reply el payload es **idéntico** (el receptor lo copia); por eso `ping` puede calcular el RTT con la marca de tiempo que vuelve.
 En Windows el payload es de **32 bytes** con el texto `abcdefghijklmnopqrstuvwabcdefghi` (ICMP = 40 B, IP = 60 B, trama = 74 B). Que sea distinto entre sistemas operativos muestra que **el contenido del Echo lo decide la implementación de ping**, no el protocolo; además es una huella que permite inferir el SO que generó el ping.
 
+> **Nota sobre cómo lo muestra Wireshark.** En el panel de detalles no aparece un único campo de 56 bytes, sino **dos líneas**: `Timestamp from icmp data` (los primeros **16 B**, que Wireshark reconoce como `struct timeval` y traduce a fecha legible) y `Data (40 bytes)` (los **40 B** restantes del patrón incremental). 16 + 40 = 56. La cuenta se verifica con los propios campos de la captura: `Total Length: 84` (IP) − 20 B de encabezado IP − 8 B de encabezado ICMP = **56 B** de payload.
+
+![Payload del Echo Request](capturas/img/01_payload.png)
+
+*Paquete 9 con `Data (40 bytes)` seleccionado: en el hexadecimal se resalta el patrón `10 11 12 13 … 36 37` y en la columna ASCII se lee `!"#$%&'()*+,- ./012345`. Arriba se ve la línea `Timestamp from icmp data: Oct 12, 2026 22:45:42`, que corresponde a los otros 16 bytes.*
+
 **d) TTL**
 Echo Request enviado: **TTL = 64** (valor inicial de Linux). Reply recibido de 8.8.8.8: **TTL = 118**. En cambio, el Reply del gateway llega con TTL = 64 (está en la misma LAN, no pasó por ningún router).
 No son iguales porque **cada sistema elige su TTL inicial** y **cada router que reenvía el datagrama decrementa el TTL en 1** (si llega a 0 lo descarta y envía un ICMP Time Exceeded). El TTL que vemos en el Request es el inicial (todavía no pasó por ningún router); el del Reply ya fue decrementado por todos los routers del camino de vuelta. Como 118 es menor que 128, lo más probable es que el servidor de Google use un TTL inicial de 128, con lo que el Reply atravesó aproximadamente **128 − 118 = 10 routers**.
+
+> El valor se ve resaltado en la captura de pantalla de la respuesta b) — `Time to Live: 118`, un solo byte (`76` en hexadecimal). En la lista de paquetes también se lee directamente en la columna Info: `ttl=64` en todos los request y `ttl=118` en los reply de 8.8.8.8.
 
 **e) Encapsulación ("cajas dentro de cajas")** — valores del paquete 9:
 
@@ -185,6 +209,10 @@ Como la IP de la Opción A no existe, ningún Request nuestro tuvo respuesta; el
 | Target MAC address | `00:00:00:00:00:00` | 4c:d7:c8:f6:10:4c |
 | Target IP address | 192.168.1.46 | 192.168.1.1 |
 
+![ARP Request del router y Reply nuestro](capturas/img/02_arp_router.png)
+
+*Paquetes 11 y 12. A diferencia de los Request de los paquetes 1–6, la MAC destino de este Request **no es broadcast** sino `58:02:05:53:72:b1` (la nuestra): el router ya tenía nuestra entrada y solo la está revalidando.*
+
 > El mismo intercambio (Request del router + Reply nuestro) aparece también en `01_icmp.pcapng`, paquetes 14 y 15, en medio del ping a 8.8.8.8.
 
 ### Preguntas
@@ -193,8 +221,14 @@ Como la IP de la Opción A no existe, ningún Request nuestro tuvo respuesta; el
 El que pregunta **no conoce la MAC** del destino (es justamente lo que busca), así que la única forma de llegar a él es mandarle la trama a todos. El que responde ya conoce la MAC del que preguntó porque vino en el campo Sender MAC del Request, así que contesta directo. La **Target MAC del Request vale `00:00:00:00:00:00`** porque es el dato desconocido: queda como un "hueco" a completar.
 Observación: el Request del router (paquete 11) fue **unicast**. No es una contradicción: el router ya tenía nuestra MAC en su caché y solo quería **confirmar que sigue siendo válida** antes de que la entrada venza, así que le pregunta directamente al dueño en lugar de molestar a toda la LAN. El broadcast hace falta solo cuando la MAC es realmente desconocida.
 
+![ARP Request en broadcast](capturas/img/02_arp_request.png)
+
+*Paquete 1, con `Target MAC address: 00:00:00:00:00:00` seleccionado (los 6 bytes en cero resaltados en el hexadecimal). En la misma imagen: `Destination: Broadcast (ff:ff:ff:ff:ff:ff)` en Ethernet, `Opcode: request (1)` y `Target IP address: 192.168.1.253` (los bytes `c0 a8 01 fd` al final del hexadecimal). La trama completa entra en 3 renglones de hexadecimal: 42 bytes.*
+
 **b) Type de Ethernet y encabezado IP**
 Type = **0x0806** (ARP). **No hay encabezado IP**: el mensaje ARP va directamente dentro de la trama Ethernet. Eso muestra que ARP "vive" por debajo de IP, ligado al enlace local: no es ruteable y nunca sale de la LAN. Las tramas ARP de la captura miden **42 B**: 14 de Ethernet + 28 de ARP. (Las tramas recibidas por cable suelen verse de 60 B por el relleno mínimo de Ethernet; acá, por Wi-Fi, se ven de 42 B.)
+
+> Esto se comprueba en la captura de pantalla de la respuesta a): en el panel de detalles, debajo de `Ethernet II` viene **directamente** `Address Resolution Protocol`. **No aparece ninguna capa `Internet Protocol Version 4` entre medio**, a diferencia de todos los paquetes ICMP del punto 1. La ausencia de esa línea es la prueba de que ARP no viaja dentro de IP.
 
 **c) Opción A (IP inexistente)**
 Aparecieron **3 ARP Request** por cada `ping -c 2`, separados ~1 s (paquetes 1–3: MAC destino `ff:ff:ff:ff:ff:ff`, Sender 58:02:05:53:72:b1 / 192.168.1.46, Target `00:00:00:00:00:00` / 192.168.1.253), y **ningún Reply**, porque ningún equipo tiene esa IP. **No apareció ningún ICMP Echo Request** en la captura: el ping se arma, pero el kernel no puede construir la trama sin la MAC destino, así que lo retiene esperando la resolución y al fallar lo descarta. `ping` informa `From 192.168.1.46 … Destination Host Unreachable`: el mensaje viene de **nuestra propia IP**, es decir, lo generó nuestro sistema localmente, no la red. La entrada queda en la caché en estado **FAILED**.
@@ -257,6 +291,10 @@ Todo bien por aca
 
 Total: 14 segmentos para 4 mensajes. El puerto del cliente (40188) lo eligió el SO.
 
+![Los 14 segmentos de la conexión TCP](capturas/img/03_tcp_14seg.png)
+
+*Captura completa con el filtro `tcp.port == 12000`. Dos cosas se leen directamente en las columnas: la columna **`Len`** vale 0 en diez de los catorce segmentos — son puro control, sin un solo byte de datos — y solo los paquetes 4, 6, 8 y 10 llevan contenido (`Len` = 14, 13, 12 y 18, los cuatro mensajes con su `\n`). Y los campos **`Seq`/`Ack`** muestran la contabilidad byte por byte: el paquete 4 manda `Seq=1 Len=14` y el 5 responde `Ack=15`, es decir "recibí hasta el byte 14, seguí desde el 15".*
+
 > Nota: en `lo` Wireshark muestra un encabezado Ethernet con MAC `00:00:00:00:00:00` en origen y destino (Linux).
 
 ### Experimento UDP
@@ -310,6 +348,12 @@ Ncat: Connection refused.
 - **UDP:** al ejecutar no pasa nada en la red, y ncat hasta dice `Connected`. Recién al escribir y dar Enter sale el datagrama, y el SO responde con un **ICMP Port Unreachable**, que lleva adentro el encabezado IP (20 B) + UDP (8 B) + los datos del datagrama original (34 B de datos ICMP). Recién ahí ncat informa `Connection refused`.
 Es decir: TCP avisa con un mecanismo propio (RST) y antes de mandar datos; UDP no tiene uno y depende de ICMP, que llega solo después de haber intentado enviar.
 
+![ICMP Port Unreachable con el datagrama original adentro](capturas/img/03_port_unreachable.png)
+
+*Paquete 4, con el ICMP y todo su contenido desplegado. Arriba, `Type: 3 (Destination unreachable)` y `Code: 3 (Port unreachable)`. Debajo, **indentado dentro del ICMP**, el datagrama que falló devuelto completo: su propio `Internet Protocol Version 4` (`Total Length: 34`, `Protocol: UDP (17)`), su `User Datagram Protocol` (`Src Port: 34445, Dst Port: 12001`) y hasta los datos: `Data: 686f6c613f0a`, que es `hola?\n` byte por byte. Gracias a esa copia el emisor puede saber **cuál** de sus datagramas rebotó, y no solo que algo rebotó. Las cuentas cierran: el IP exterior declara `Total Length: 62` = 20 (encabezado IP) + 8 (encabezado ICMP) + 34 (copia del datagrama), y la trama mide 76 B = 14 + 62.*
+
+> **Nota sobre la disección del paquete 3.** Al abrir este archivo, Wireshark muestra el paquete 3 como protocolo **`LLC`** en lugar de UDP: como el puerto 12001 no es un puerto conocido, aplica heurísticas sobre el payload y en este caso acierta mal (los bytes `68 6f 6c 61 3f 0a` de `hola?\n` le parecen campos de otro protocolo). Que se trata del datagrama UDP se confirma por dos vías: el tamaño de la trama, 48 B = 14 (Ethernet) + 20 (IP) + 8 (UDP) + 6 (datos), y sobre todo la copia que el ICMP del paquete 4 lleva adentro, donde se leen `Src Port: 34445`, `Dst Port: 12001` y los 6 bytes de datos. Para que Wireshark lo muestre correctamente: *Analyze → Decode As…*, fila `UDP port 34445`, columna **Current** = **`Data`**.
+
 **¿Hacía falta usar puertos distintos para TCP y UDP?** No. Los espacios de puertos de TCP y UDP son **independientes**: el puerto 12000/TCP y el 12000/UDP son extremos distintos, porque el SO primero mira el campo Protocol de IP (6 o 17) y recién después el puerto. Los filtros `tcp.port` y `udp.port` también los separarían. Usar números distintos solo hace las capturas más fáciles de leer.
 
 ---
@@ -348,6 +392,10 @@ $ python3 tcp_client.py 127.0.0.1 "Hola desde mi programa"
 | 9 | servidor → cliente | FIN, ACK | 0 |
 | 10 | cliente → servidor | ACK | 0 |
 
+![Los 10 segmentos generados por los scripts](capturas/img/04_tcp_scripts.png)
+
+*El patrón es idéntico al del experimento con ncat —handshake, datos con sus ACK, cierre con FIN— pero generado por nuestro propio código. Una diferencia llamativa está en la columna **Time**: toda la conexión se completó en **0,0003 s**, contra los casi 8 s de la captura de ncat. No es que TCP sea más rápido acá: en ncat el tiempo lo ponía una persona tipeando. Los tiempos que se miden en una captura son casi siempre tiempos de aplicación, no de protocolo.*
+
 ### d) Llamadas al sistema vs. tráfico
 
 | Llamada | ¿Dónde se ejecuta? | ¿Genera tráfico? | Segmentos que observan |
@@ -367,4 +415,5 @@ $ python3 tcp_client.py 127.0.0.1 "Hola desde mi programa"
 
 ## Archivos entregados
 - Capturas: `capturas/01_icmp.pcapng`, `02_arp.pcapng`, `03_tcp_ncat.pcapng`, `03_udp_ncat.pcapng`, `03_puertos_cerrados.pcapng`, `04_tcp_scripts.pcapng`
+- Capturas de pantalla de Wireshark, en `capturas/img/`: `01_capas.png`, `01_mac_gateway.png`, `01_mac_8888.png`, `01_ttl.png`, `01_payload.png`, `02_arp_request.png`, `02_arp_router.png`, `03_tcp_14seg.png`, `03_port_unreachable.png`, `04_tcp_scripts.png`
 - Scripts: `tcp_server.py`, `tcp_client.py`
